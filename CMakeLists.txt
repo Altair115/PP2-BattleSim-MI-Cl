@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.12)
 project("PP2 Battle Simulator")
 
 option(USE_PACKAGE_MANAGER "Use conan for managing packages" ON)
