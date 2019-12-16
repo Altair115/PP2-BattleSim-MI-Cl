@@ -31,10 +31,18 @@ generate_source_groups(${SOURCE_FILES})
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC .)
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
-#target_link_libraries(${PROJECT_NAME} PRIVATE GLEW::GLEW)
-target_link_libraries(${PROJECT_NAME} PRIVATE CONAN_PKG::sdl2)
-target_link_libraries(${PROJECT_NAME} PRIVATE CONAN_PKG::freeimage)
+if (USE_PACKAGE_MANAGER)
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
+    #target_link_libraries(${PROJECT_NAME} PRIVATE GLEW::GLEW)
+    target_link_libraries(${PROJECT_NAME} PRIVATE CONAN_PKG::sdl2)
+    target_link_libraries(${PROJECT_NAME} PRIVATE CONAN_PKG::freeimage)
+else ()
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
+
+    target_include_directories(${PROJECT_NAME} PRIVATE ${FreeImage_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${FreeImage_LIBRARIES})
+endif ()
 
 cotire(${PROJECT_NAME})
 
