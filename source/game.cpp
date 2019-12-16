@@ -37,7 +37,7 @@ using namespace PP2;
 
 
 //Global performance timer
-#define REF_PERFORMANCE 65732 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+#define REF_PERFORMANCE 73804.1 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -140,38 +140,7 @@ Tank &Game::FindClosestEnemy(Tank &current_tank) {
 // -----------------------------------------------------------
 void Game::Update(float deltaTime) {
     //Update tanks
-    for (Tank &tank : tanks) {
-        if (tank.active) {
-            //Check tank collision and nudge tanks away from each other
-            for (Tank &oTank : tanks) {
-                if (&tank == &oTank) continue;
-
-                vec2 dir = tank.Get_Position() - oTank.Get_Position();
-                float dirSquaredLen = dir.sqrLength();
-
-                float colSquaredLen = (tank.Get_collision_radius() * tank.Get_collision_radius()) +
-                                      (oTank.Get_collision_radius() * oTank.Get_collision_radius());
-
-                if (dirSquaredLen < colSquaredLen) {
-                    tank.Push(dir.normalized(), 1.f);
-                }
-            }
-
-            //Move tanks according to speed and nudges (see above) also reload
-            tank.Tick();
-
-            //Shoot at closest target if reloaded
-            if (tank.Rocket_Reloaded()) {
-                Tank &target = FindClosestEnemy(tank);
-
-                rockets.push_back(
-                        Rocket(tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
-                               tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
-
-                tank.Reload_Rocket();
-            }
-        }
-    }
+    UpdateTank();
 
     //Update smoke plumes
     for (Smoke &smoke : smokes) {
@@ -179,43 +148,14 @@ void Game::Update(float deltaTime) {
     }
 
     //Update rockets
-    for (Rocket &rocket : rockets) {
-        rocket.Tick();
-
-        //Check if rocket collides with enemy tank, spawn explosion and if tank is destroyed spawn a smoke plume
-        for (Tank &tank : tanks) {
-            if (tank.active && (tank.allignment != rocket.allignment) &&
-                rocket.Intersects(tank.position, tank.collision_radius)) {
-                explosions.push_back(Explosion(&explosion, tank.position));
-
-                if (tank.hit(ROCKET_HIT_VALUE)) {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                }
-
-                rocket.active = false;
-                break;
-            }
-        }
-    }
+    UpdateRocket();
 
     //Remove exploded rockets with remove erase idiom
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket &rocket) { return !rocket.active; }),
                   rockets.end());
 
     //Update particle beams
-    for (Particle_beam &particle_beam : particle_beams) {
-        particle_beam.tick(tanks);
-
-        //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
-        for (Tank &tank : tanks) {
-            if (tank.active &&
-                particle_beam.rectangle.intersectsCircle(tank.Get_Position(), tank.Get_collision_radius())) {
-                if (tank.hit(particle_beam.damage)) {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                }
-            }
-        }
-    }
+    UpdateParticalBeam();
 
     //Update explosion sprites and remove when done with remove erase idiom
     for (Explosion &explosion : explosions) {
@@ -261,31 +201,12 @@ void Game::Draw() {
     }
 
     //Draw sorted health bars
-    for (int t = 0; t < 2; t++) {
-        const UINT16 NUM_TANKS = ((t < 1) ? NUM_TANKS_BLUE : NUM_TANKS_RED);
-
-        const UINT16 begin = ((t < 1) ? 0 : NUM_TANKS_BLUE);
-        std::vector<const Tank *> sorted_tanks;
-        insertion_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS);
-
-        for (int i = 0; i < NUM_TANKS; i++) {
-            int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
-            int health_bar_start_y = (t < 1) ? 0 : (SCRHEIGHT - HEALTH_BAR_HEIGHT) - 1;
-            int health_bar_end_x = health_bar_start_x + HEALTH_BAR_WIDTH;
-            int health_bar_end_y = (t < 1) ? HEALTH_BAR_HEIGHT : SCRHEIGHT - 1;
-
-            screen->Bar(health_bar_start_x, health_bar_start_y, health_bar_end_x, health_bar_end_y, REDMASK);
-            screen->Bar(health_bar_start_x, health_bar_start_y + (int) ((double) HEALTH_BAR_HEIGHT * (1 -
-                                                                                                      ((double) sorted_tanks.at(
-                                                                                                              i)->health /
-                                                                                                       (double) TANK_MAX_HEALTH))),
-                        health_bar_end_x, health_bar_end_y, GREENMASK);
-        }
-    }
+    HealthBarUpdate();
 }
 
 // -----------------------------------------------------------
 // Sort tanks by health value using insertion sort
+// Sorting algorithm N^2
 // -----------------------------------------------------------
 void
 PP2::Game::insertion_sort_tanks_health(const std::vector<Tank> &original, std::vector<const Tank *> &sorted_tanks,
@@ -361,4 +282,105 @@ void Game::Tick(float deltaTime) {
     frame_count++;
     string frame_count_string = "FRAME: " + std::to_string(frame_count);
     frame_count_font->Print(screen, frame_count_string.c_str(), 350, 580);
+}
+
+// Updating Rocket O(NK)
+void Game::UpdateRocket() {
+    for (Rocket &rocket : rockets) {
+        rocket.Tick();
+
+        //Check if rocket collides with enemy tank, spawn explosion and if tank is destroyed spawn a smoke plume
+        for (Tank &tank : tanks) {
+            if (tank.active && (tank.allignment != rocket.allignment) &&
+                rocket.Intersects(tank.position, tank.collision_radius)) {
+                explosions.push_back(Explosion(&explosion, tank.position));
+
+                if (tank.hit(ROCKET_HIT_VALUE)) {
+                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                }
+
+                rocket.active = false;
+                break;
+            }
+        }
+    }
+}
+// Updates Tank O(N^2)
+void Game::UpdateTank() {
+    for (Tank &tank : tanks) {
+        if (tank.active) {
+            //Check tank collision and nudge tanks away from each other
+            for (Tank &oTank : tanks) {
+                if (&tank == &oTank) continue;
+
+                vec2 dir = tank.Get_Position() - oTank.Get_Position();
+                float dirSquaredLen = dir.sqrLength();
+
+                float colSquaredLen = (tank.Get_collision_radius() * tank.Get_collision_radius()) +
+                                      (oTank.Get_collision_radius() * oTank.Get_collision_radius());
+
+                if (dirSquaredLen < colSquaredLen) {
+                    tank.Push(dir.normalized(), 1.f);
+                }
+            }
+
+            //Move tanks according to speed and nudges (see above) also reload
+            tank.Tick();
+
+            //Shoot at closest target if reloaded
+            if (tank.Rocket_Reloaded()) {
+                Tank &target = FindClosestEnemy(tank);
+
+                rockets.push_back(
+                        Rocket(tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
+                               tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+
+                tank.Reload_Rocket();
+            }
+        }
+    }
+}
+
+// UpdateAllParticalBeam O(NK)
+// Window Quarry search ?
+void Game::UpdateParticalBeam() {
+    for (Particle_beam &particle_beam : particle_beams) {
+        particle_beam.tick(tanks);
+
+        //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
+        for (Tank &tank : tanks) {
+            if (tank.active &&
+                particle_beam.rectangle.intersectsCircle(tank.Get_Position(), tank.Get_collision_radius())) {
+                if (tank.hit(particle_beam.damage)) {
+                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                }
+            }
+        }
+    }
+}
+// O(N)
+// Sorting ?
+void Game::HealthBarUpdate() {
+
+    for (int t = 0; t < 2; t++) {
+        const UINT16 NUM_TANKS = ((t < 1) ? NUM_TANKS_BLUE : NUM_TANKS_RED);
+
+        const UINT16 begin = ((t < 1) ? 0 : NUM_TANKS_BLUE);
+        std::vector<const Tank *> sorted_tanks;
+        insertion_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS);
+
+        for (int i = 0; i < NUM_TANKS; i++) {
+            int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
+            int health_bar_start_y = (t < 1) ? 0 : (SCRHEIGHT - HEALTH_BAR_HEIGHT) - 1;
+            int health_bar_end_x = health_bar_start_x + HEALTH_BAR_WIDTH;
+            int health_bar_end_y = (t < 1) ? HEALTH_BAR_HEIGHT : SCRHEIGHT - 1;
+
+            screen->Bar(health_bar_start_x, health_bar_start_y, health_bar_end_x, health_bar_end_y, REDMASK);
+            screen->Bar(health_bar_start_x, health_bar_start_y + (int) ((double) HEALTH_BAR_HEIGHT * (1 -
+                                                                                                      ((double) sorted_tanks.at(
+                                                                                                              i)->health /
+                                                                                                       (double) TANK_MAX_HEALTH))),
+                        health_bar_end_x, health_bar_end_y, GREENMASK);
+        }
+    }
 }

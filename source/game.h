@@ -53,6 +53,10 @@ namespace PP2 {
 
         void KeyDown(int key) { /* implement if you want to handle keys */
         }
+        void UpdateRocket();
+        void UpdateTank();
+        void UpdateParticalBeam();
+        void HealthBarUpdate();
 
     private:
         Surface *screen;
