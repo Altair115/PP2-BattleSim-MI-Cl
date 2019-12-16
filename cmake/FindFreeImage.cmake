@@ -1,49 +1,101 @@
-#-------------------------------------------------------------------
-# This file is part of the CMake build system for OGRE
-#     (Object-oriented Graphics Rendering Engine)
-# For the latest info, see http://www.ogre3d.org/
+# Find the FreeImage library.
 #
-# The contents of this file are placed in the public domain. Feel
-# free to make use of it in any way you like.
-#-------------------------------------------------------------------
+# This module defines
+#  FreeImage::freeimage        - Imported target; link against this in your project.
+#  FreeImage_FOUND             - True if FreeImage was found.
 
-# - Try to find FreeImage
-# Once done, this will define
+#  Additionaly, these variables are defined and can be used:
+#  FREEIMAGE_INCLUDE_DIRS      - Include directories for FreeImage headers.
+#  FREEIMAGE_LIBRARY           - Libraries for FreeImage.
 #
-#  FreeImage_FOUND - system has FreeImage
-#  FreeImage_INCLUDE_DIRS - the FreeImage include directories 
-#  FreeImage_LIBRARIES - link these to use FreeImage
+# To specify an additional directory to search, set FREEIMAGE_ROOT.
+#
+# Copyright (c) 2010, Ewen Cheslack-Postava
+# Based on FindSQLite3.cmake by:
+#  Copyright (c) 2006, Jaroslaw Staniek, <js@iidea.pl>
+#  Extended by Siddhartha Chaudhuri, 2008.
+#
+# Redistribution and use is allowed according to the terms of the BSD license.
+#
 
-include(FindPkgMacros)
-findpkg_begin(FreeImage)
+SET(SEARCH_PATHS
+	$ENV{ProgramFiles}/freeimage/include
+	$ENV{SystemDrive}/freeimage/include
+	$ENV{ProgramFiles}/freeimage
+	$ENV{SystemDrive}/freeimage
+	)
+IF(FREEIMAGE_ROOT)
+	SET(SEARCH_PATHS
+		${FREEIMAGE_ROOT}
+		${FREEIMAGE_ROOT}/include
+		${SEARCH_PATHS}
+		)
+ENDIF()
 
-# Get path, convert backslashes as ${ENV_${var}}
-getenv_path(FREEIMAGE_HOME)
+FIND_PATH(FREEIMAGE_INCLUDE_DIRS
+	NAMES FreeImage.h
+	PATHS ${SEARCH_PATHS}
+	NO_DEFAULT_PATH)
+IF(NOT FREEIMAGE_INCLUDE_DIRS)  # now look in system locations
+	FIND_PATH(FREEIMAGE_INCLUDE_DIRS NAMES FreeImage.h)
+ENDIF(NOT FREEIMAGE_INCLUDE_DIRS)
 
-# construct search paths
-set(FreeImage_PREFIX_PATH ${FREEIMAGE_HOME} ${ENV_FREEIMAGE_HOME})
-create_search_paths(FreeImage)
-# redo search if prefix path changed
-clear_if_changed(FreeImage_PREFIX_PATH
-  FreeImage_LIBRARY_FWK
-  FreeImage_LIBRARY_REL
-  FreeImage_LIBRARY_DBG
-  FreeImage_INCLUDE_DIR
-)
+IF(FREEIMAGE_ROOT)
+	SET(FREEIMAGE_LIBRARY_DIRS ${FREEIMAGE_ROOT})
+	IF(EXISTS "${FREEIMAGE_ROOT}/lib")
+		SET(FREEIMAGE_LIBRARY_DIRS ${FREEIMAGE_LIBRARY_DIRS} ${FREEIMAGE_ROOT}/lib)
+	ENDIF()
+	IF(EXISTS "${FREEIMAGE_ROOT}/lib/static")
+		SET(FREEIMAGE_LIBRARY_DIRS ${FREEIMAGE_LIBRARY_DIRS} ${FREEIMAGE_ROOT}/lib/static)
+	ENDIF()
+ENDIF()
 
-set(FreeImage_LIBRARY_NAMES freeimage freeimageLib FreeImage FreeImageLib)
-get_debug_names(FreeImage_LIBRARY_NAMES)
+# FREEIMAGE
+# Without system dirs
+FIND_LIBRARY(FREEIMAGE_LIBRARY
+	NAMES freeimage
+	PATHS ${FREEIMAGE_LIBRARY_DIRS}
+	NO_DEFAULT_PATH
+	)
+IF(NOT FREEIMAGE_LIBRARY)  # now look in system locations
+	FIND_LIBRARY(FREEIMAGE_LIBRARY NAMES freeimage)
+ENDIF(NOT FREEIMAGE_LIBRARY)
 
-use_pkgconfig(FreeImage_PKGC freeimage)
+if (WIN32 AND FREEIMAGE_LIBRARY)
+	find_file(FREEIMAGE_RUNTIME_LIBRARY
+		NAMES
+		FreeImage.dll
+		PATHS ${FREEIMAGE_LIBRARY_DIRS}
+	)
+endif (WIN32 AND FREEIMAGE_LIBRARY)
 
-findpkg_framework(FreeImage)
+# Handle QUIET & REQUIRED flags. Set FreeImage_FOUND properly:
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(FreeImage
+	DEFAULT_MSG
+	FREEIMAGE_LIBRARY
+	FREEIMAGE_INCLUDE_DIRS)
 
-find_path(FreeImage_INCLUDE_DIR NAMES FreeImage.h HINTS ${FreeImage_INC_SEARCH_PATH} ${FreeImage_PKGC_INCLUDE_DIRS})
+if (FreeImage_FOUND)
+	if (NOT TARGET FreeImage::freeimage)
+		add_library(FreeImage::freeimage SHARED IMPORTED)
+		if (WIN32)
+			set_target_properties(FreeImage::freeimage
+				PROPERTIES
+				IMPORTED_IMPLIB "${FREEIMAGE_LIBRARY}"
+				IMPORTED_LOCATION "${FREEIMAGE_RUNTIME_LIBRARY}"
+			)
+		else (WIN32)
+			set_target_properties(FreeImage::freeimage
+				PROPERTIES
+				IMPORTED_LOCATION "${FREEIMAGE_LIBRARY}"
+			)
+		endif (WIN32)
+		set_target_properties(FreeImage::freeimage
+			PROPERTIES
+			INTERFACE_INCLUDE_DIRECTORIES "${FREEIMAGE_INCLUDE_DIRS}"
+		)
+	endif (NOT TARGET FreeImage::freeimage)
+endif (FreeImage_FOUND)
 
-find_library(FreeImage_LIBRARY_REL NAMES ${FreeImage_LIBRARY_NAMES} HINTS ${FreeImage_LIB_SEARCH_PATH} ${FreeImage_PKGC_LIBRARY_DIRS} PATH_SUFFIXES "" Release RelWithDebInfo MinSizeRel)
-find_library(FreeImage_LIBRARY_DBG NAMES ${FreeImage_LIBRARY_NAMES_DBG} HINTS ${FreeImage_LIB_SEARCH_PATH} ${FreeImage_PKGC_LIBRARY_DIRS} PATH_SUFFIXES "" Debug)
-
-make_library_set(FreeImage_LIBRARY)
-
-findpkg_finish(FreeImage)
-
+MARK_AS_ADVANCED(FREEIMAGE_INCLUDE_DIRS FREEIMAGE_LIBRARY)
