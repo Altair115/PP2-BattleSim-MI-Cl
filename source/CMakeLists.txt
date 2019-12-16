@@ -40,7 +40,7 @@ else ()
     target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
 
     target_include_directories(${PROJECT_NAME} PRIVATE ${FreeImage_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${FreeImage_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${FREEIMAGE_LIBRARY})
 endif ()
 
 if (USE_PACKAGE_MANAGER)
