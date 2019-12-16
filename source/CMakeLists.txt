@@ -1,6 +1,5 @@
 project(PP2)
 
-include(cotire)
 
 ####################################################################################################
 #  SOURCE FILES
@@ -44,8 +43,10 @@ else ()
     target_link_libraries(${PROJECT_NAME} PRIVATE ${FreeImage_LIBRARIES})
 endif ()
 
-cotire(${PROJECT_NAME})
-
+if (USE_PACKAGE_MANAGER)
+    include(cotire)
+    cotire(${PROJECT_NAME})
+endif ()
 add_custom_target(
         copy_resources
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets/ $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets/
