@@ -143,8 +143,8 @@ void Game::Update(float deltaTime) {
     UpdateTank();
 
     //Update smoke plumes
-    for (Smoke &smoke : smokes) {
-        smoke.Tick();
+    for (Smoke &_smoke : smokes) {
+        _smoke.Tick();
     }
 
     //Update rockets
@@ -158,12 +158,12 @@ void Game::Update(float deltaTime) {
     UpdateParticalBeam();
 
     //Update explosion sprites and remove when done with remove erase idiom
-    for (Explosion &explosion : explosions) {
-        explosion.Tick();
+    for (Explosion &_explosion : explosions) {
+        _explosion.Tick();
     }
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(),
-                                    [](const Explosion &explosion) { return explosion.done(); }), explosions.end());
+                                    [](const Explosion &_explosion) { return _explosion.done(); }), explosions.end());
 }
 
 void Game::Draw() {
@@ -188,16 +188,16 @@ void Game::Draw() {
         rocket.Draw(screen);
     }
 
-    for (Smoke &smoke : smokes) {
-        smoke.Draw(screen);
+    for (Smoke &_smoke : smokes) {
+        _smoke.Draw(screen);
     }
 
     for (Particle_beam &particle_beam : particle_beams) {
         particle_beam.Draw(screen);
     }
 
-    for (Explosion &explosion : explosions) {
-        explosion.Draw(screen);
+    for (Explosion &_explosion : explosions) {
+        _explosion.Draw(screen);
     }
 
     //Draw sorted health bars
