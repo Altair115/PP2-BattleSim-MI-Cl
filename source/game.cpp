@@ -109,6 +109,7 @@ void Game::Init() {
 // Close down application
 // -----------------------------------------------------------
 void Game::Shutdown() {
+    delete frame_count_font;
 }
 
 // -----------------------------------------------------------
@@ -305,6 +306,7 @@ void Game::UpdateRocket() {
         }
     }
 }
+
 // Updates Tank O(N^2)
 void Game::UpdateTank() {
     for (Tank &tank : tanks) {
@@ -358,6 +360,7 @@ void Game::UpdateParticalBeam() {
         }
     }
 }
+
 // O(N)
 // Sorting ?
 void Game::HealthBarUpdate() {
