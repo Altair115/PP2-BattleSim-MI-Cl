@@ -10,8 +10,10 @@ namespace PP2 {
     };
 
     class Tank {
+        friend class grid;
     public:
-        Tank(float pos_x, float pos_y, allignments allignment, Sprite *tank_sprite, Sprite *smoke_sprite, float tar_x,
+
+        Tank(grid* _grid,float pos_x, float pos_y, allignments allignment, Sprite *tank_sprite, Sprite *smoke_sprite, float tar_x,
              float tar_y, float collision_radius, int health, float max_speed);
 
         ~Tank();
@@ -56,7 +58,11 @@ namespace PP2 {
         int current_frame;
         Sprite *tank_sprite;
         Sprite *smoke_sprite;
-
+    private:
+        Tank* next_;
+        Tank* prev_;
+        grid* grid_;
+        int cellposX,cellposY;
     };
 
 } // namespace PP2

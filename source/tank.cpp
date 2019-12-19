@@ -1,7 +1,8 @@
 #include "tank.h"
+#include "grid.h"
 
 namespace PP2 {
-    Tank::Tank(
+    Tank::Tank(grid* _grid,
             float pos_x,
             float pos_y,
             allignments allignment,
@@ -12,7 +13,10 @@ namespace PP2 {
             float collision_radius,
             int health,
             float max_speed)
-            : position(pos_x, pos_y),
+            :next_(NULL),
+            prev_(NULL),
+            grid_(_grid),
+            position(pos_x, pos_y),
               allignment(allignment),
               target(tar_x, tar_y),
               health(health),
@@ -26,6 +30,7 @@ namespace PP2 {
               current_frame(0),
               tank_sprite(tank_sprite),
               smoke_sprite(smoke_sprite) {
+              _grid->add(this);
     }
 
     Tank::~Tank() {
@@ -34,17 +39,18 @@ namespace PP2 {
     void Tank::Tick() {
         vec2 direction = (target - position).normalized();
 
+
         //Update using accumulated force
         speed = direction + force;
         position += speed * max_speed * 0.5f;
-
+        this->grid_->move(this, position);
         //Update reload time
         if (--reload_time <= 0.0f) {
             reloaded = true;
         }
 
         force = vec2(0.f, 0.f);
-
+        this->grid_->move(this, position);
         if (++current_frame > 8) current_frame = 0;
     }
 
@@ -86,5 +92,6 @@ namespace PP2 {
     void Tank::Push(vec2 direction, float magnitude) {
         force += direction * magnitude;
     }
+
 
 } // namespace PP2
