@@ -6,6 +6,7 @@
 #include "smoke.h"
 #include "explosion.h"
 #include "particle_beam.h"
+#include "grid.h"
 #include <cstdint>
 
 namespace PP2 {
@@ -17,7 +18,7 @@ namespace PP2 {
     class Smoke;
 
     class Particle_beam;
-
+    class grid;
     class Game {
     public:
         void SetTarget(Surface *surface) { screen = surface; }
@@ -69,7 +70,7 @@ namespace PP2 {
 
         Font *frame_count_font;
         long long frame_count = 0;
-
+        grid _grid;
         bool lock_update = false;
     };
 

@@ -8,15 +8,23 @@
 #pragma once
 
 #include "tank.h"
+#include <vector>
 
 namespace PP2 {
     class grid {
     public:
+
         grid();
-        static const int numberOfCells = 10;
+        void handelTank(Tank* tank, Tank* other);
+        void add(Tank* tank);
+        void handelCell(int x, int y);
+        void move(Tank* tank , vec2 targetPosition);
+        bool colliding(Tank* tank, Tank* other);
+        void handelpush();
+        static const int numberOfCells = 1000;
         static const int sizeOfCell = 20;
     private:
-        Tank *cells_[numberOfCells][numberOfCells];
+        Tank* cells_[numberOfCells][numberOfCells];
     };
 }
 

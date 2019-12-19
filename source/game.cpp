@@ -84,16 +84,15 @@ void Game::Init() {
     float start_red_y = 100.0f;
 
     float spacing = 15.0f;
-
     //Spawn blue tanks
     for (int i = 0; i < NUM_TANKS_BLUE; i++) {
-        tanks.push_back(Tank(start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE,
+        tanks.push_back(Tank(&_grid,start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE,
                              &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     //Spawn red tanks
     for (int i = 0; i < NUM_TANKS_RED; i++) {
         tanks.push_back(
-                Tank(start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red,
+                Tank(&_grid,start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red,
                      &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
 
@@ -309,38 +308,19 @@ void Game::UpdateRocket() {
 
 // Updates Tank O(N^2)
 void Game::UpdateTank() {
-    for (Tank &tank : tanks) {
-        if (tank.active) {
-            //Check tank collision and nudge tanks away from each other
-            for (Tank &oTank : tanks) {
-                if (&tank == &oTank) continue;
+    for (Tank &tank : tanks){
+        tank.Tick();
+        if (tank.Rocket_Reloaded()) {
+            Tank &target = FindClosestEnemy(tank);
 
-                vec2 dir = tank.Get_Position() - oTank.Get_Position();
-                float dirSquaredLen = dir.sqrLength();
+            rockets.push_back(
+                    Rocket(tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
+                           tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
 
-                float colSquaredLen = (tank.Get_collision_radius() * tank.Get_collision_radius()) +
-                                      (oTank.Get_collision_radius() * oTank.Get_collision_radius());
-
-                if (dirSquaredLen < colSquaredLen) {
-                    tank.Push(dir.normalized(), 1.f);
-                }
-            }
-
-            //Move tanks according to speed and nudges (see above) also reload
-            tank.Tick();
-
-            //Shoot at closest target if reloaded
-            if (tank.Rocket_Reloaded()) {
-                Tank &target = FindClosestEnemy(tank);
-
-                rockets.push_back(
-                        Rocket(tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
-                               tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
-
-                tank.Reload_Rocket();
-            }
+            tank.Reload_Rocket();
         }
     }
+
 }
 
 // UpdateAllParticalBeam O(NK)
