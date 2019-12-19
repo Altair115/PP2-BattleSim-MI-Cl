@@ -39,18 +39,18 @@ namespace PP2 {
     void Tank::Tick() {
         vec2 direction = (target - position).normalized();
 
-       this->grid_->move(this ,direction);
+
         //Update using accumulated force
         speed = direction + force;
         position += speed * max_speed * 0.5f;
-
+        this->grid_->move(this, position);
         //Update reload time
         if (--reload_time <= 0.0f) {
             reloaded = true;
         }
 
         force = vec2(0.f, 0.f);
-
+        this->grid_->move(this, position);
         if (++current_frame > 8) current_frame = 0;
     }
 

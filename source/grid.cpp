@@ -59,7 +59,7 @@ void PP2::grid::move(PP2::Tank *tank, vec2 targetPosistion) {
     int oldCellY = (int)(tank->position.y / grid::sizeOfCell);
     if(oldCellX < 0){
         oldCellX = 0;
-    }  
+    }
     if(oldCellY < 0){
         oldCellY = 0;
     }

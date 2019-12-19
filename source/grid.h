@@ -19,6 +19,7 @@ namespace PP2 {
         void add(Tank* tank);
         void handelCell(int x, int y);
         void move(Tank* tank , vec2 targetPosition);
+
         bool colliding(Tank* tank, Tank* other);
         void handelpush();
         static const int numberOfCells = 1000;

@@ -62,7 +62,7 @@ namespace PP2 {
         Tank* next_;
         Tank* prev_;
         grid* grid_;
-        float pos_x_{}, pos_y_{};
+        int cellposX,cellposY;
     };
 
 } // namespace PP2
